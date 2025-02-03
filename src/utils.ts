@@ -24,7 +24,7 @@ export enum SupportedEncryptionModes {
     XCHACHA20 = "aead_xchacha20_poly1305_rtpsize"
 }
 
-export type SupportedVideoCodec = "H264" | "H265" | "VP8" | "VP9" | "AV1";
+export type SupportedVideoCodec = "H264" | "H265" | "VP8" | "VP9" | "AV1" | "NVENC";
 
 // RTP extensions
 export const extensions = [{ id: 5, len: 2, val: 0}];

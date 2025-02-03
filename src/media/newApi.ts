@@ -13,7 +13,7 @@ export type EncoderOptions = {
      * Disable video transcoding
      * If enabled, all video related settings have no effects, and the input
      * video stream is used as-is.
-     * 
+     *
      * You need to ensure that the video stream has the right properties
      * (keyframe every 1s, B-frames disabled). Failure to do so will result in
      * a glitchy stream, or degraded performance
@@ -112,45 +112,45 @@ export function prepareStream(
 
             width:
                 isFiniteNonZero(opts.width) ? Math.round(opts.width) : defaultOptions.width,
-    
+
             height:
                 isFiniteNonZero(opts.height) ? Math.round(opts.height) : defaultOptions.height,
-    
+
             frameRate:
                 isFiniteNonZero(opts.frameRate) && opts.frameRate > 0
                     ? opts.frameRate
                     : defaultOptions.frameRate,
-    
+
             videoCodec:
                 opts.videoCodec ?? defaultOptions.videoCodec,
-    
+
             bitrateVideo:
                 isFiniteNonZero(opts.bitrateVideo) && opts.bitrateVideo > 0
                     ? Math.round(opts.bitrateVideo)
                     : defaultOptions.bitrateVideo,
-    
+
             bitrateVideoMax:
                 isFiniteNonZero(opts.bitrateVideoMax) && opts.bitrateVideoMax > 0
                     ? Math.round(opts.bitrateVideoMax)
                     : defaultOptions.bitrateVideoMax,
-    
+
             bitrateAudio:
                 isFiniteNonZero(opts.bitrateAudio) && opts.bitrateAudio > 0
                     ? Math.round(opts.bitrateAudio)
                     : defaultOptions.bitrateAudio,
-    
+
             includeAudio:
                 opts.includeAudio ?? defaultOptions.includeAudio,
-    
+
             hardwareAcceleratedDecoding:
                 opts.hardwareAcceleratedDecoding ?? defaultOptions.hardwareAcceleratedDecoding,
-    
+
             minimizeLatency:
                 opts.minimizeLatency ?? defaultOptions.minimizeLatency,
-    
+
             h26xPreset:
                 opts.h26xPreset ?? defaultOptions.h26xPreset,
-    
+
             customHeaders: {
                 ...defaultOptions.customHeaders, ...opts.customHeaders
             }
@@ -171,12 +171,13 @@ export function prepareStream(
 
     // command creation
     const command = ffmpeg(input)
-        .addOption('-loglevel', '0')
+        .addOption('-loglevel', 'debug')
 
     // input options
     const { hardwareAcceleratedDecoding, minimizeLatency, customHeaders } = mergedOptions;
     if (hardwareAcceleratedDecoding)
-        command.inputOption('-hwaccel', 'auto');
+        command.inputOption('-hwaccel', 'cuda');
+    command.inputOption('-hwaccel_device', '0');
 
     if (minimizeLatency) {
         command.addOptions([
@@ -216,7 +217,7 @@ export function prepareStream(
     }
     else
     {
-        command.videoFilter(`scale=${width}:${height}`)
+        command.videoFilter(`scale_cuda=${width}:${height}`)
 
         if (frameRate)
             command.fpsOutput(frameRate);
@@ -260,6 +261,14 @@ export function prepareStream(
                         '-tune zerolatency',
                         `-preset ${h26xPreset}`,
                         '-profile:v main',
+                    ]);
+                break;
+            case 'NVENC':
+                command
+                    .videoCodec("h264_nvenc")
+                    .outputOptions([
+                        '-tune zerolatency',
+                        '-profile:v baseline',
                     ]);
                 break;
         }
@@ -341,7 +350,7 @@ export async function playStream(
         [AVCodecID.AV_CODEC_ID_H265]: "H265",
         [AVCodecID.AV_CODEC_ID_VP8]: "VP8",
         [AVCodecID.AV_CODEC_ID_VP9]: "VP9",
-        [AVCodecID.AV_CODEC_ID_AV1]: "AV1"
+        [AVCodecID.AV_CODEC_ID_AV1]: "AV1",
     }
     const defaultOptions = {
         type: "go-live",
